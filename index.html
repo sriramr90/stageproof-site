@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>StageProof</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: a ledger. Narrow measure, hairline rules, evidence rendered as receipts beside the claims. */
+  :root {
+    --bg: #f4f6f7;
+    --surface: #ffffff;
+    --ink: #142029;
+    --ink-2: #51616d;
+    --line: #d9e0e4;
+    --accent: #0f6e8c;
+    --accent-ink: #ffffff;
+    --met: #22784a;
+    --unverified: #a86b12;
+    --missing: #b33a3a;
+    --met-bg: #e5f3ea;
+    --unverified-bg: #fbefd9;
+    --missing-bg: #f9e4e4;
+    --display: "Bricolage Grotesque", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Sans 3", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1619; --surface: #162025; --ink: #e8edf0; --ink-2: #9fb0ba; --line: #2a373f;
+      --accent: #5fb6d6; --accent-ink: #0b1316;
+      --met: #6cc48f; --unverified: #e0a94a; --missing: #e27676;
+      --met-bg: #16301f; --unverified-bg: #34270f; --missing-bg: #3a1c1c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1619; --surface: #162025; --ink: #e8edf0; --ink-2: #9fb0ba; --line: #2a373f;
+    --accent: #5fb6d6; --accent-ink: #0b1316;
+    --met: #6cc48f; --unverified: #e0a94a; --missing: #e27676;
+    --met-bg: #16301f; --unverified-bg: #34270f; --missing-bg: #3a1c1c;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.55; }
+  a { color: var(--accent); }
+  h1, h2, h3 { font-family: var(--display); line-height: 1.08; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(2.2rem, 5.2vw, 3.9rem); font-weight: 700; }
+  h2 { font-size: clamp(1.6rem, 3vw, 2.3rem); font-weight: 700; }
+  h3 { font-size: 1.15rem; font-weight: 700; }
+  p { margin: 0; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .measure { max-width: 62ch; }
+  .eyebrow { font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  .muted { color: var(--ink-2); }
+  .btn { display: inline-flex; align-items: center; gap: .5rem; font-family: var(--display); font-weight: 700; font-size: .95rem; padding: .7rem 1.1rem; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; cursor: pointer; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 2px; }
+  section { padding-block: 4.5rem; }
+  section + section { border-top: 1px solid var(--line); }
+
+  /* Header */
+  header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: .8rem; }
+  .brand { display: flex; align-items: center; gap: .55rem; font-family: var(--display); font-weight: 700; font-size: 1.1rem; color: var(--ink); text-decoration: none; }
+  .brand svg { width: 26px; height: 26px; }
+  .nav-links { display: flex; gap: 1.2rem; font-size: .95rem; }
+  .nav-links a { color: var(--ink-2); text-decoration: none; }
+  @media (max-width: 640px) { .nav-links { display: none; } }
+
+  /* Hero */
+  .hero { padding-block: 4.5rem 3.5rem; display: grid; grid-template-columns: 1.05fr .95fr; gap: 3rem; align-items: center; }
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } }
+  .hero p.lede { font-size: 1.2rem; margin-top: 1.2rem; }
+  .hero .cta { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1.8rem; }
+  .hero .fine { font-size: .9rem; margin-top: 1rem; }
+
+  /* Deal receipt */
+  .receipt { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 18px 40px -28px color-mix(in srgb, var(--ink) 45%, transparent); min-width: 0; }
+  .receipt .head { display: flex; justify-content: space-between; align-items: start; gap: 1rem; padding: 1rem 1.1rem; border-bottom: 1px solid var(--line); }
+  .receipt .head .name { font-family: var(--display); font-weight: 700; font-size: 1.05rem; }
+  .receipt .head .meta { font-size: .85rem; color: var(--ink-2); margin-top: .15rem; }
+  .pill { display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; padding: .2rem .6rem; font-size: .75rem; font-weight: 600; font-family: var(--mono); white-space: nowrap; }
+  .pill.missing { background: var(--missing-bg); color: var(--missing); }
+  .pill.clear { background: var(--met-bg); color: var(--met); }
+  .pill.unverified { background: var(--unverified-bg); color: var(--unverified); }
+  .receipt ul { list-style: none; margin: 0; padding: 0; }
+  .receipt li { display: grid; grid-template-columns: 14px 1fr; gap: .7rem; padding: .8rem 1.1rem; border-bottom: 1px solid var(--line); font-size: .93rem; }
+  .receipt li:last-child { border-bottom: 0; }
+  .dot { width: 10px; height: 10px; border-radius: 999px; margin-top: .4rem; }
+  .dot.met { background: var(--met); } .dot.unmet { background: var(--missing); } .dot.unverified { background: var(--unverified); }
+  .receipt .claim { font-weight: 600; }
+  .receipt .cite { color: var(--ink-2); font-size: .85rem; margin-top: .15rem; }
+  .receipt .cite code { font-family: var(--mono); font-size: .78rem; background: color-mix(in srgb, var(--ink) 7%, transparent); padding: .05rem .3rem; border-radius: 3px; }
+  .receipt .action { padding: .8rem 1.1rem; background: color-mix(in srgb, var(--accent) 8%, var(--surface)); font-size: .9rem; border-top: 1px solid var(--line); border-radius: 0 0 10px 10px; }
+  .receipt .action b { font-family: var(--display); }
+
+  /* Comparison */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-top: 2rem; }
+  @media (max-width: 700px) { .compare { grid-template-columns: 1fr; } }
+  .compare > div { background: var(--surface); padding: 1.4rem; min-width: 0; }
+  .compare h3 { margin-bottom: .5rem; }
+  .compare .ex { font-family: var(--mono); font-size: .82rem; padding: .7rem .8rem; border-radius: 6px; margin-top: .8rem; background: color-mix(in srgb, var(--ink) 6%, transparent); }
+
+  /* Steps */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; margin-top: 2rem; }
+  @media (max-width: 900px) { .steps { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px) { .steps { grid-template-columns: 1fr; } }
+  .step { border-top: 2px solid var(--accent); padding-top: .9rem; min-width: 0; }
+  .step .n { font-family: var(--mono); font-size: .75rem; color: var(--accent); }
+  .step h3 { margin-top: .3rem; }
+  .step p { margin-top: .5rem; font-size: .97rem; color: var(--ink-2); }
+
+  /* Surfaces */
+  .surfaces { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; margin-top: 2rem; }
+  @media (max-width: 800px) { .surfaces { grid-template-columns: 1fr; } }
+  .surface { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.3rem; min-width: 0; }
+  .surface .kv { font-family: var(--mono); font-size: .8rem; margin-top: .9rem; display: grid; gap: .3rem; }
+  .surface .kv span { color: var(--ink-2); }
+  .surface p { margin-top: .5rem; color: var(--ink-2); font-size: .97rem; }
+
+  /* Principles */
+  .principles { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6rem 3rem; margin-top: 2rem; counter-reset: p; }
+  @media (max-width: 700px) { .principles { grid-template-columns: 1fr; } }
+  .principle { min-width: 0; }
+  .principle h3::before { counter-increment: p; content: counter(p) ". "; color: var(--accent); font-family: var(--mono); font-size: .9rem; }
+  .principle p { margin-top: .4rem; color: var(--ink-2); font-size: .97rem; }
+  .precedence { margin-top: 1.5rem; font-size: .9rem; }
+
+  /* Pricing */
+  .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; margin-top: 2rem; }
+  @media (max-width: 800px) { .plans { grid-template-columns: 1fr; } }
+  .plan { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.4rem; min-width: 0; display: flex; flex-direction: column; gap: .8rem; }
+  .plan.featured { border-color: var(--accent); }
+  .plan .price { font-family: var(--display); font-size: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .plan .price small { font-family: var(--body); font-size: .95rem; font-weight: 400; color: var(--ink-2); }
+  .plan ul { margin: 0; padding-left: 1.1rem; color: var(--ink-2); font-size: .95rem; display: grid; gap: .3rem; }
+
+  /* FAQ */
+  .faq { display: grid; gap: .5rem; margin-top: 1.5rem; }
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .9rem 1.1rem; }
+  summary { cursor: pointer; font-family: var(--display); font-weight: 700; }
+  details p { margin-top: .6rem; color: var(--ink-2); max-width: 70ch; }
+
+  /* Request form */
+  .request { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: start; }
+  @media (max-width: 800px) { .request { grid-template-columns: 1fr; } }
+  form { display: grid; gap: .9rem; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.4rem; min-width: 0; }
+  label { font-size: .85rem; font-weight: 600; color: var(--ink-2); display: grid; gap: .3rem; }
+  input, select, textarea { font: inherit; font-size: 1rem; padding: .6rem .7rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); width: 100%; }
+  .notice { font-size: .92rem; padding: .8rem .9rem; border-radius: 6px; background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); }
+  .notice.ok { background: var(--met-bg); border-color: var(--met); }
+  footer { padding-block: 2.5rem; border-top: 1px solid var(--line); font-size: .9rem; color: var(--ink-2); }
+  @media (prefers-reduced-motion: no-preference) { .receipt li { animation: rise .5s ease both; } .receipt li:nth-child(2) { animation-delay: .08s } .receipt li:nth-child(3) { animation-delay: .16s } .receipt li:nth-child(4) { animation-delay: .24s } }
+  @keyframes rise { from { transform: translateY(4px); opacity: .5 } to { transform: none; opacity: 1 } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top" aria-label="StageProof home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--accent)"/><path d="M9 17l5 5 9-11" fill="none" stroke="var(--accent-ink)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      StageProof
+    </a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#how">How it works</a>
+      <a href="#reps">For reps</a>
+      <a href="#principles">Principles</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#request">Free audit</a>
+    </nav>
+    <a class="btn primary" href="#request">Request the free audit</a>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap hero">
+    <div>
+      <div class="eyebrow">Stage integrity for HubSpot</div>
+      <h1 style="margin-top:.6rem">HubSpot checks that a field is filled. StageProof checks that it is true.</h1>
+      <p class="lede measure">Every stage becomes a claim with evidence. For each open deal, StageProof reads the emails, calls, meetings and contacts already in HubSpot and tells the rep exactly what is missing, with the proof, and the one action that closes the gap.</p>
+      <div class="cta">
+        <a class="btn primary" href="#request">Request the free audit</a>
+        <a class="btn" href="#how">See how it works</a>
+      </div>
+      <p class="fine muted">Read-only install. Every verdict cites its source or abstains. StageProof never moves a stage on its own.</p>
+    </div>
+    <div class="receipt" aria-label="Example deal evaluation">
+      <div class="head">
+        <div>
+          <div class="name">Orchard Foods – Platform</div>
+          <div class="meta">Contract Sent · 24 days in stage · winners spend 17</div>
+        </div>
+        <span class="pill missing">Missing</span>
+      </div>
+      <ul>
+        <li><span class="dot met"></span><div><div class="claim">A decision maker is identified</div><div class="cite">Maria Chen tagged Decision Maker · <code>contact 7021</code></div></div></li>
+        <li><span class="dot met"></span><div><div class="claim">The decision maker attended a meeting</div><div class="cite">Demo for the leadership team, 34 min · <code>meeting Sep 29</code></div></div></li>
+        <li><span class="dot unmet"></span><div><div class="claim">The buyer replied in the last 14 days</div><div class="cite">Last inbound email 26 days ago · <code>email Sep 21</code></div></div></li>
+        <li><span class="dot unverified"></span><div><div class="claim">Budget was discussed with the budget holder</div><div class="cite">No contact is tagged Budget Holder, so this cannot be checked yet</div></div></li>
+      </ul>
+      <div class="action"><b>Next action:</b> send the follow-up with a concrete next step and get a reply from the buyer.</div>
+    </div>
+  </div>
+
+  <section id="problem">
+    <div class="wrap">
+      <div class="eyebrow">The problem</div>
+      <h2 style="margin-top:.5rem" class="measure">Stage gates get beaten with "TBD", a test contact and a burst of logged calls.</h2>
+      <p class="measure muted" style="margin-top:1rem">Required fields prove that someone typed something. They do not prove that a decision maker exists, that budget was discussed, or that the buyer is still answering. So the pipeline review spends its thirty minutes on the deals whose stage is fiction, and the forecast inherits the fiction.</p>
+      <div class="compare">
+        <div>
+          <h3>A pipeline rule</h3>
+          <p class="muted">Validates that a property is non-empty when a deal moves.</p>
+          <div class="ex">budget_confirmed = "Yes" ✓<br>decision_maker = "TBD" ✓<br>next_step = "-" ✓</div>
+        </div>
+        <div>
+          <h3>A StageProof criterion</h3>
+          <p class="muted">Judges whether the record shows the criterion is true, and cites what it relied on.</p>
+          <div class="ex">budget discussed → unverified (no Budget Holder tagged)<br>decision maker → met (Maria Chen, contact 7021)<br>next step → missing ("-" is a placeholder)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="eyebrow">How it works</div>
+      <h2 style="margin-top:.5rem" class="measure">From connect to a finding you recognise as true in about fifteen minutes.</h2>
+      <div class="steps">
+        <div class="step"><div class="n">Step 1</div><h3>Connect</h3><p>Install as a read-only HubSpot app. StageProof imports open deals and two years of closed deals with their stage history, contacts and logged activity.</p></div>
+        <div class="step"><div class="n">Step 2</div><h3>Learn from history</h3><p>Every candidate criterion is evaluated as of the moment each closed deal entered each stage. The ones that separated your wins from your losses are proposed, with the numbers: "deals with a decision maker at entry to Presentation won at 2.6× the rate".</p></div>
+        <div class="step"><div class="n">Step 3</div><h3>Approve and audit</h3><p>You edit the wording and approve. Every open deal is checked and you see the ten to look at first, gaps by stage and rep, and what cannot be verified yet.</p></div>
+        <div class="step"><div class="n">Step 4</div><h3>Reps fix it</h3><p>Findings reach reps inside HubSpot and Slack with the evidence and a drafted fix. Confirm writes it. Not true suppresses it and teaches the system.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="reps">
+    <div class="wrap">
+      <div class="eyebrow">For reps</div>
+      <h2 style="margin-top:.5rem" class="measure">Reps never log in. They see what is missing where they already work.</h2>
+      <div class="surfaces">
+        <div class="surface">
+          <h3>Deal properties</h3>
+          <p>Three properties on every open deal, on every HubSpot tier. Build views, workflows and reports on them.</p>
+          <div class="kv"><span>stageproof_status</span>Missing<span>stageproof_missing</span>Buyer replied in last 14 days<span>stageproof_checked_at</span>2026-10-17 09:14</div>
+        </div>
+        <div class="surface">
+          <h3>Slack</h3>
+          <p>A direct message to the deal owner when a finding opens, with the proposed fix as buttons: Confirm, Edit, Not true. A Monday digest to managers naming the deals and why.</p>
+        </div>
+        <div class="surface">
+          <h3>Deal record card</h3>
+          <p>Each criterion for the current and next stage with its verdict, evidence links and a Confirm button, on the deal itself.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="principles">
+    <div class="wrap">
+      <div class="eyebrow">Principles</div>
+      <h2 style="margin-top:.5rem" class="measure">Six rules decide every design question. When two conflict, the earlier one wins.</h2>
+      <div class="principles">
+        <div class="principle"><h3>Evidence over fields</h3><p>A criterion is met when the record shows it, not when a property is non-empty. "Budget confirmed = Yes" with no email or call mentioning budget is unverified, not met.</p></div>
+        <div class="principle"><h3>Deterministic core, AI at the edges</h3><p>Rules produce every yes or no that appears in a report. A model compiles criteria, judges evidence and drafts fixes; its output is an input to a rule, never the final record.</p></div>
+        <div class="principle"><h3>Cite or abstain</h3><p>Every verdict carries the engagement it relied on. Below confidence it says "can't tell" and asks the rep rather than guessing either way.</p></div>
+        <div class="principle"><h3>Rep-first</h3><p>The rep sees the finding before the manager sees it in a list. A gate that only punishes gets gamed; one that drafts the fix gets used.</p></div>
+        <div class="principle"><h3>Always on, with history</h3><p>Evaluation runs on every CRM change and every verdict is stored with its timestamp. The product is the record over time.</p></div>
+        <div class="principle"><h3>Never auto-move stages, never silent writes</h3><p>Writes go only to StageProof's own properties, or to standard properties after an explicit confirm, with who confirmed and which evidence recorded.</p></div>
+      </div>
+      <p class="precedence muted measure">Read-only scopes at install. Write scopes only when you turn on confirm-and-write. Email bodies are never requested; StageProof works from subjects, participants, calls, meetings and notes.</p>
+    </div>
+  </section>
+
+  <section id="pricing">
+    <div class="wrap">
+      <div class="eyebrow">Pricing</div>
+      <h2 style="margin-top:.5rem" class="measure">Per portal, monthly, no seat minimums.</h2>
+      <p class="muted measure" style="margin-top:.8rem">Planned launch pricing. The free one-shot audit comes first and costs nothing.</p>
+      <div class="plans">
+        <div class="plan">
+          <h3>Starter</h3>
+          <div class="price">$99 <small>/ portal / month</small></div>
+          <ul><li>One pipeline</li><li>Deal properties and Slack</li><li>Up to 200 open deals</li><li>Learned criteria from your history</li></ul>
+        </div>
+        <div class="plan featured">
+          <h3>Team</h3>
+          <div class="price">$199 <small>/ portal / month</small></div>
+          <ul><li>All pipelines</li><li>Deal record card</li><li>Confirm-and-write fixes</li><li>Call recording sources</li></ul>
+        </div>
+        <div class="plan">
+          <h3>Agency</h3>
+          <div class="price">$499 <small>/ month</small></div>
+          <ul><li>Up to 10 client portals</li><li>Criteria templates across portals</li><li>Per-client adherence rollup</li><li>White-label monthly PDF</li></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <div class="eyebrow">Questions</div>
+      <div class="faq">
+        <details><summary>What does StageProof read?</summary><p>Deals, contacts, companies, owners, pipelines and the engagements already logged in HubSpot: calls, emails (subject, participants and snippet, never the body unless you grant it), meetings, notes and tasks. Only activity logged in HubSpot exists to StageProof, and it tells you which sources your portal actually logs.</p></details>
+        <details><summary>What if we do not tag buying roles?</summary><p>Role criteria read as unverified with the reason, never as missing, and the first audit tells you how many dollars tagging would let it verify. Roles come from HubSpot's association labels or a contact property, never from guessing by job title.</p></details>
+        <details><summary>Does it change our data?</summary><p>At install, no. It creates three of its own deal properties and writes only to those. Writing to standard properties happens only when you enable confirm-and-write, and only when a rep confirms a specific fix. Stage moves are never written.</p></details>
+        <details><summary>Where do the criteria come from?</summary><p>From your own closed deals. Each candidate is tested at the moment deals entered each stage, so it cannot see the outcome, and ranked by how well it separated wins from losses. You see the counts, edit the wording and approve. MEDDIC and BANT templates fill in where history is thin.</p></details>
+        <details><summary>Which HubSpot tiers?</summary><p>The deal properties work on every tier, including Starter, which has no stage rules at all. The deal card and call sources depend on what your tier records.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section id="request">
+    <div class="wrap request">
+      <div>
+        <div class="eyebrow">Free audit</div>
+        <h2 style="margin-top:.5rem">Connect a portal and see what is missing on every open deal.</h2>
+        <p class="muted measure" style="margin-top:1rem">The audit is read-only, takes about fifteen minutes, and ends with the ten deals to look at first. Tell us about your pipeline and we will set it up with you.</p>
+      </div>
+      <form id="request-form" novalidate>
+        <label for="f-name">Your name<input id="f-name" name="name" autocomplete="name" required></label>
+        <label for="f-email">Work email<input id="f-email" name="email" type="email" autocomplete="email" required></label>
+        <label for="f-company">Company<input id="f-company" name="company" autocomplete="organization"></label>
+        <label for="f-deals">Open deals in HubSpot
+          <select id="f-deals" name="deals">
+            <option value="under_100">Under 100</option>
+            <option value="100_500" selected>100 to 500</option>
+            <option value="500_2000">500 to 2,000</option>
+            <option value="over_2000">Over 2,000</option>
+          </select>
+        </label>
+        <label for="f-notes">Anything we should know<textarea id="f-notes" name="notes" rows="3"></textarea></label>
+        <button class="btn primary" type="submit" id="f-submit">Request the free audit</button>
+        <div id="f-status" class="notice" hidden></div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">StageProof · Stage integrity for HubSpot pipelines. Salesforce follows.</div>
+</footer>
+
+<script>
+(() => {
+  const form = document.getElementById("request-form");
+  const status = document.getElementById("f-status");
+  const submit = document.getElementById("f-submit");
+  let dbp = null;
+  const getDb = () => (dbp ??= (window.claude?.use ? window.claude.use("db") : Promise.resolve(null)));
+  const say = (msg, ok) => { status.textContent = msg; status.classList.toggle("ok", !!ok); status.hidden = false; };
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = form.name.value.trim();
+    const email = form.email.value.trim();
+    if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { say("Add your name and a work email address.", false); return; }
+    submit.disabled = true;
+    try {
+      const db = await getDb();
+      if (!db) {
+        say("Requests from this page are not wired up yet. Reach the StageProof team directly with your name, work email and roughly how many open deals you have, and we will set up the audit.", false);
+        return;
+      }
+      const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      await db.doc("waitlist/" + id).set({ name, email, company: form.company.value.trim(), deals: form.deals.value, notes: form.notes.value.trim(), at: new Date().toISOString() });
+      say("Request received. We will reach out to set up the audit.", true);
+      form.reset();
+    } catch (err) {
+      say("The request could not be saved. Reply to the person who shared this link instead.", false);
+    } finally {
+      submit.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>
